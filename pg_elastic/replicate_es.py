@@ -30,6 +30,7 @@ class ElasticRepliaction(object):
 
             if 'exclude_columns' in table:
                 self.exclude_columns += table['exclude_columns'].split(',')
+            # self.es.indices.create(index='tracking', ignore=400)
 
         map(init_values, tables)
 
@@ -43,11 +44,7 @@ class ElasticRepliaction(object):
     def parse_doc_body(self, document, change):
         data = {}
         for idx, column in enumerate(change['columnnames']):
-            if column == document['_id']:
-                document['_id'] = change['columnvalues'][idx]
-                if type(document['_id']) == str or type(document['_id']) == unicode:
-                    document['_id'] = document['_id'].strip()
-            elif column not in self.exclude_columns:
+            if column not in self.exclude_columns:
                 if change['kind'] == 'update':
                     document['_source'] = {}
                     document['_source']['doc'] = self.handle_dates(data, change['columnnames'][idx], change['columnvalues'][idx])
@@ -91,19 +88,19 @@ class ElasticRepliaction(object):
         def normal_replicate(change):
             kind = change['kind']
             table = change['table']
-
-            document = {}
-            document['_index'] = table
-            document['_type'] = 'document'
-            document['_id'] = self.table_ids[table]
-
+            
             if kind in ['delete', 'insert', 'update'] and table in self.table_ids.keys():
+                document = {}
+                # document['_index'] = table
+                # document['_type'] = 'document'
+                # document['_id'] = change['columnvalues'][0]
                 if kind == 'delete':
                     document = self.parse_delete(document, change)
                 else:
                     document = self.parse_insert_or_update(document, change)
 
-                return document
+                # return document
+                return self.es.index('tracking', doc_type = '_doc', body = document)
 
         if initial and initial_table:
             try:
@@ -113,9 +110,10 @@ class ElasticRepliaction(object):
         else:
             data_to_replicate = map(normal_replicate, data['change'])
 
-
-            for success, info in helpers.parallel_bulk(self.es, data_to_replicate, thread_count=multiprocessing.cpu_count(), chunk_size=40):
-                if not success:
-                    print('A document failed:', info)
+            # for success, info in helpers.parallel_bulk(self.es, data_to_replicate, thread_count=multiprocessing.cpu_count(), chunk_size=40):
+            #     if not success:
+            #         print('A document failed:', info)
+            #     else:
+            #         print('success')
 
             print(data_to_replicate)

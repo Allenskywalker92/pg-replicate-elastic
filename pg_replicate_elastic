@@ -14,7 +14,8 @@ class PgReplicateElastic(object):
 
     def __init__(self, args):
         super(PgReplicateElastic, self).__init__()
-        self.args = args
+        args = '--config=config.json'
+        self.args = ['--config=config.json']
         self.config = None
 
     def _elastic_consumer(self, msg):
