@@ -1,5 +1,6 @@
 from __future__ import print_function
 import sys
+import json
 import multiprocessing
 from elasticsearch import Elasticsearch
 from elasticsearch import helpers
@@ -46,10 +47,14 @@ class ElasticRepliaction(object):
         for idx, column in enumerate(change['columnnames']):
             if column not in self.exclude_columns:
                 if change['kind'] == 'update':
-                    document['_source'] = {}
-                    document['_source']['doc'] = self.handle_dates(data, change['columnnames'][idx], change['columnvalues'][idx])
+                    document = self.handle_dates(document, change['columnnames'][idx], change['columnvalues'][idx])
+                    # document['_source'] = {}
+                    # document['_source']['doc'] = self.handle_dates(data, change['columnnames'][idx], change['columnvalues'][idx])
                 else:
                     document = self.handle_dates(document, change['columnnames'][idx], change['columnvalues'][idx])
+
+        document['_original'] = ''
+        document['_original'] = json.dumps(change)
         return document
 
     def parse_insert_or_update(self, document, change):
@@ -62,12 +67,15 @@ class ElasticRepliaction(object):
 
     def parse_delete(self, document, change):
         document['_op_type'] = 'delete'
-        for idx, column in enumerate(change['oldkeys']['keynames']):
-            if column == document['_id']:
-                document['_id'] = change['oldkeys']['keyvalues'][idx]
-                if type(document['_id']) == str or type(document['_id']) == unicode:
-                    document['_id'] = document['_id'].strip()
-                break
+        # for idx, column in enumerate(change['oldkeys']['keynames']):
+        #     if column == document['_id']:
+        #         document['_id'] = change['oldkeys']['keyvalues'][idx]
+        #         if type(document['_id']) == str or type(document['_id']) == unicode:
+        #             document['_id'] = document['_id'].strip()
+        #         break
+
+        document['_original'] = ''
+        document['_original'] = json.dumps(change)
         return document
 
     def replicate(self, data, initial=False, initial_table=None):
