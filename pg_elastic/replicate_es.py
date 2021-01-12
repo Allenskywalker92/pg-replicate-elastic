@@ -5,7 +5,7 @@ import multiprocessing
 from elasticsearch import Elasticsearch
 from elasticsearch import helpers
 from dateutil.parser import parse
-
+from datetime import datetime
 
 class ElasticRepliaction(object):
     """CRUD replication to Elasticsearch"""
@@ -99,15 +99,13 @@ class ElasticRepliaction(object):
             
             if kind in ['delete', 'insert', 'update'] and table in self.table_ids.keys():
                 document = {}
-                # document['_index'] = table
-                # document['_type'] = 'document'
-                # document['_id'] = change['columnvalues'][0]
+                document['table_name'] = table
                 if kind == 'delete':
                     document = self.parse_delete(document, change)
                 else:
                     document = self.parse_insert_or_update(document, change)
 
-                # return document
+                document['index_time'] = datetime.utcnow()
                 return self.es.index('tracking', doc_type = '_doc', body = document)
 
         if initial and initial_table:
