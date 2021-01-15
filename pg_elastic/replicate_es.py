@@ -25,15 +25,15 @@ class ElasticRepliaction(object):
         self.table_ids = {}
 
         def init_values(table):
-            print('Creating index %s ...' % table['name'], file=sys.stderr)
             self.table_ids[table['name'].strip()] = table['primary_key']
-            self.es.indices.create(index=table['name'].strip(), ignore=400)
 
             if 'exclude_columns' in table:
                 self.exclude_columns += table['exclude_columns'].split(',')
             # self.es.indices.create(index='tracking', ignore=400)
 
         map(init_values, tables)
+        print('Creating index tracking', file=sys.stderr)
+        self.es.indices.create('tracking', ignore=400)
 
     def handle_dates(self, document, column, value):
         try:
